@@ -192,3 +192,74 @@ if st.button("🚀 Predict Revenue"):
             
             ax2.set_xlabel('Relative Importance')
             st.pyplot(fig2)
+st.divider()
+st.header("🧪 Model Performance & Accuracy")
+
+if st.checkbox("Run Accuracy Test on Full Dataset"):
+    
+    # Check if data exists
+    if df_raw is None or df_raw.empty:
+        st.error("⚠️ Cannot test accuracy: Dataset not loaded.")
+    elif 'Revenue' not in df_raw.columns:
+        st.error("⚠️ The dataset is missing the 'Revenue' column to test against.")
+    else:
+        try:
+            from sklearn.metrics import mean_absolute_error, r2_score
+            
+            with st.spinner("Calculating accuracy metrics..."):
+                # 1. Prepare Features (X) and Target (y)
+                y_true = df_raw['Revenue']
+                X_test = df_raw.drop(['Revenue'], axis=1) # Drop target
+                
+                # 2. Encode categorical variables exactly like training
+                X_test_encoded = pd.get_dummies(X_test)
+                
+                # 3. Align columns with the trained model (CRITICAL STEP)
+                # This ensures the test data has the exact same columns as the model
+                if len(model_columns) > 0:
+                    X_test_encoded = X_test_encoded.reindex(columns=model_columns, fill_value=0)
+                
+                # 4. Make Predictions
+                y_pred = model.predict(X_test_encoded)
+                
+                # 5. Calculate Metrics
+                mae = mean_absolute_error(y_true, y_pred)
+                r2 = r2_score(y_true, y_pred)
+                
+                # 6. Display Metrics
+                m1, m2 = st.columns(2)
+                m1.metric("R² Score (Accuracy)", f"{r2:.2%}", help="100% is perfect, 0% is random.")
+                m2.metric("Mean Absolute Error", f"${mae:,.0f}", help="Average dollar amount the prediction is off by.")
+                
+                # 7. Visualization: Actual vs Predicted
+                st.subheader("Actual vs. Predicted Revenue")
+                
+                fig_acc, ax_acc = plt.subplots(figsize=(8, 4))
+                ax_acc.scatter(y_true, y_pred, alpha=0.5, color='#4CAF50')
+                
+                # Draw a diagonal line (Perfect Prediction Line)
+                min_val = min(y_true.min(), y_pred.min())
+                max_val = max(y_true.max(), y_pred.max())
+                ax_acc.plot([min_val, max_val], [min_val, max_val], 'r--', lw=2, label='Perfect Prediction')
+                
+                ax_acc.set_xlabel("Actual Revenue")
+                ax_acc.set_ylabel("Predicted Revenue")
+                ax_acc.legend()
+                ax_acc.grid(True, alpha=0.3)
+                
+                st.pyplot(fig_acc)
+                
+                # 8. Show Raw Data Comparison
+                with st.expander("See Detailed Data Comparison"):
+                    results_df = pd.DataFrame({
+                        "Actual Revenue": y_true,
+                        "Predicted Revenue": y_pred,
+                        "Difference": y_true - y_pred
+                    })
+                    st.dataframe(results_df)
+
+        except ImportError:
+            st.error("⚠️ You need 'scikit-learn' installed to run this test.")
+            st.info("Add `scikit-learn` to your requirements.txt file.")
+        except Exception as e:
+            st.error(f"An error occurred during testing: {e}")
