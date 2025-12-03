@@ -87,6 +87,7 @@ st.sidebar.header("📝 Input Company Parameters")
 def user_input_features():
     # Financials
     market_cap = st.sidebar.number_input("Market Cap ($M)", min_value=10.0, value=5000.0)
+    employees = st.sidebar.number_input("Employee Count", min_value=10, value=500)
     growth_rate = st.sidebar.slider("Growth Rate (%)", min_value=-20.0, max_value=50.0, value=3.5)
     
     # ESG Scores
@@ -119,6 +120,7 @@ def user_input_features():
     # Store in dictionary
     data = {
         'MarketCap': market_cap,
+        'EmployeeCount': employees,
         'GrowthRate': growth_rate,
         'ESG_Environmental': esg_env,
         'ESG_Social': esg_soc,
